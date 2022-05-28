@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/davemolk/recordAPI/internal/data"
 	"github.com/davemolk/recordAPI/internal/validator"
@@ -15,7 +15,9 @@ func (app *application) createAlbumHandler(w http.ResponseWriter, r *http.Reques
 		Artist string `json:"artist"`
 		Genres []string `json:"genres"`
 	}
+
 	err := app.readJSON(w, r, &input)
+	fmt.Println(input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -33,8 +35,20 @@ func (app *application) createAlbumHandler(w http.ResponseWriter, r *http.Reques
 		app.failedValidationsResponse(w, r, v.Errors)
 		return
 	}
+
+	err = app.models.Albums.Insert(album)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/albums/%d", album.ID))
 	
-	fmt.Fprintf(w, "%+v\n", input)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"album": album}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 func (app *application) showAlbumHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,13 +58,15 @@ func (app *application) showAlbumHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	album := data.Album{
-		ID: id,
-		CreatedAt: time.Now(),
-		Title: "Kind of Blue",
-		Artist: "Miles Davis",
-		Genres: []string{"jazz", "modal"},
-		Version: 1,		
+	album, err := app.models.Albums.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
 	
 	err = app.writeJSON(w, http.StatusOK, envelope{"album": album}, nil)
