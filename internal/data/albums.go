@@ -76,10 +76,45 @@ func (a AlbumModel) Get(id int64) (*Album, error) {
 }
 
 func (a AlbumModel) Update(album *Album) error {
-	return nil
+	query := `
+		UPDATE albums
+		SET title = $1, artist = $2, genres = $3, version = version + 1
+		WHERE id = $4
+		RETURNING version`
+
+	args := []interface{}{
+		album.Title,
+		album.Artist,
+		pq.Array(album.Genres),
+		album.ID,
+	}
+
+	return a.DB.QueryRow(query, args...).Scan(&album.Version)
 }
 
 func (a AlbumModel) Delete(id int64) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	query := `
+		DELETE FROM albums
+		WHERE id = $1`
+
+	result, err := a.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}	
+
 	return nil
 }
 

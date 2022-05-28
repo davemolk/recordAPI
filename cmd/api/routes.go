@@ -14,6 +14,8 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/albums", app.createAlbumHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/albums/:id", app.showAlbumHandler)
+	router.HandlerFunc(http.MethodPut, "/v1/albums/:id", app.updateAlbumHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/albums/:id", app.deleteAlbumHandler)
 
 	return router
 }
