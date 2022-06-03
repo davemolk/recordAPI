@@ -95,8 +95,8 @@ func (app *application) updateAlbumHandler(w http.ResponseWriter, r *http.Reques
 	}
 	
 	var input struct {
-		Title string `json:"title"`
-		Artist string `json:"artist"`
+		Title *string `json:"title"`
+		Artist *string `json:"artist"`
 		Genres []string `json:"genres"`
 	}
 
@@ -106,9 +106,17 @@ func (app *application) updateAlbumHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	album.Title = input.Title
-	album.Artist = input.Artist
-	album.Genres = input.Genres
+	if input.Title != nil {
+		album.Title = *input.Title
+	}
+
+	if input.Artist != nil {
+		album.Artist = *input.Artist
+	}
+
+	if input.Genres != nil {
+		album.Genres = input.Genres
+	}
 
 	v := validator.New()
 
@@ -119,7 +127,12 @@ func (app *application) updateAlbumHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.models.Albums.Update(album)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r,)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 

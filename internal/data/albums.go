@@ -79,7 +79,7 @@ func (a AlbumModel) Update(album *Album) error {
 	query := `
 		UPDATE albums
 		SET title = $1, artist = $2, genres = $3, version = version + 1
-		WHERE id = $4
+		WHERE id = $4 AND version = $5
 		RETURNING version`
 
 	args := []interface{}{
@@ -87,9 +87,19 @@ func (a AlbumModel) Update(album *Album) error {
 		album.Artist,
 		pq.Array(album.Genres),
 		album.ID,
+		album.Version,
 	}
 
-	return a.DB.QueryRow(query, args...).Scan(&album.Version)
+	err := a.DB.QueryRow(query, args...).Scan(&album.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 func (a AlbumModel) Delete(id int64) error {
