@@ -76,6 +76,32 @@ func (app *application) showAlbumHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+func (app *application) listAlbumsHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Title string
+		Artist string 
+		Genres []string 
+		data.Filters
+	}
+	
+	v := validator.New()
+	qs := r.URL.Query()
+	
+	input.Title = app.readString(qs, "title", "")
+	input.Artist = app.readString(qs, "artist", "")
+	input.Genres = app.readCSV(qs, "genres", []string{})
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+
+	if !v.Valid() {
+		app.failedValidationsResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
+}
+
 func (app *application) updateAlbumHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {

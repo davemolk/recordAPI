@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -37,8 +38,11 @@ func (a AlbumModel) Insert(album *Album) error {
 		RETURNING id, created_at, version`
 
 	args := []interface{}{album.Title, album.Artist, pq.Array(album.Genres)}
+
+	ctx, cancel := context.WithTimeout(context.Background(),3*time.Second)
+	defer cancel()
 	
-	return a.DB.QueryRow(query, args...).Scan(&album.ID, &album.CreatedAt, &album.Version)
+	return a.DB.QueryRowContext(ctx, query, args...).Scan(&album.ID, &album.CreatedAt, &album.Version)
 }
 
 func (a AlbumModel) Get(id int64) (*Album, error) {
@@ -53,7 +57,10 @@ func (a AlbumModel) Get(id int64) (*Album, error) {
 	
 	var album Album
 
-	err := a.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := a.DB.QueryRowContext(ctx, query, id).Scan(
 		&album.ID,
 		&album.CreatedAt,
 		&album.Title,
@@ -90,7 +97,10 @@ func (a AlbumModel) Update(album *Album) error {
 		album.Version,
 	}
 
-	err := a.DB.QueryRow(query, args...).Scan(&album.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := a.DB.QueryRowContext(ctx, query, args...).Scan(&album.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -111,7 +121,10 @@ func (a AlbumModel) Delete(id int64) error {
 		DELETE FROM albums
 		WHERE id = $1`
 
-	result, err := a.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := a.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

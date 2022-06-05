@@ -12,6 +12,7 @@ func (app *application) routes() *httprouter.Router {
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/albums", app.listAlbumsHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/albums", app.createAlbumHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/albums/:id", app.showAlbumHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/albums/:id", app.updateAlbumHandler)
