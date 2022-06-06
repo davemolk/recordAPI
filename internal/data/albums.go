@@ -82,6 +82,42 @@ func (a AlbumModel) Get(id int64) (*Album, error) {
 
 }
 
+func (a AlbumModel) GetAll(title, artist string, genres []string, filters Filters) ([]*Album, error) {
+	query := `
+		SELECT id, created_at, title, artist, genres, version
+		FROM albums
+		ORDER BY id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := a.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	albums := []*Album{}
+	for rows.Next() {
+		var album Album
+		err := rows.Scan(
+			&album.ID,
+			&album.CreatedAt,
+			&album.Title,
+			&album.Artist,
+			pq.Array(&album.Genres),
+			&album.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+		albums = append(albums, &album)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return albums, nil
+}
+
 func (a AlbumModel) Update(album *Album) error {
 	query := `
 		UPDATE albums
