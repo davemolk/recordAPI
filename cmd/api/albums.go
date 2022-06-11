@@ -100,12 +100,12 @@ func (app *application) listAlbumsHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	albums, err := app.models.Albums.GetAll(input.Title, input.Artist, input.Genres, input.Filters)
+	albums, metadata, err := app.models.Albums.GetAll(input.Title, input.Artist, input.Genres, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"albums": albums}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"albums": albums, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

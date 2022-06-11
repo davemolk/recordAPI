@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/davemolk/recordAPI/internal/validator"
@@ -82,24 +83,34 @@ func (a AlbumModel) Get(id int64) (*Album, error) {
 
 }
 
-func (a AlbumModel) GetAll(title, artist string, genres []string, filters Filters) ([]*Album, error) {
-	query := `
-		SELECT id, created_at, title, artist, genres, version
+func (a AlbumModel) GetAll(title, artist string, genres []string, filters Filters) ([]*Album, Metadata, error) {
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), id, created_at, title, artist, genres, version
 		FROM albums
-		ORDER BY id`
+		WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') 
+		AND (to_tsvector('simple', artist) @@ plainto_tsquery('simple', $2) OR $2 = '') 
+		AND (genres @> $3 OR $3 = '{}')
+		ORDER BY %s %s, id ASC
+		LIMIT $4 OFFSET $5`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := a.DB.QueryContext(ctx, query)
+	args := []interface{}{title, artist, pq.Array(genres), filters.limit(), filters.offset()}
+
+	rows, err := a.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 	defer rows.Close()
+
+	totalRecords := 0
 	albums := []*Album{}
+
 	for rows.Next() {
 		var album Album
 		err := rows.Scan(
+			&totalRecords,
 			&album.ID,
 			&album.CreatedAt,
 			&album.Title,
@@ -108,14 +119,16 @@ func (a AlbumModel) GetAll(title, artist string, genres []string, filters Filter
 			&album.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 		albums = append(albums, &album)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
-	return albums, nil
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	return albums, metadata, nil
 }
 
 func (a AlbumModel) Update(album *Album) error {
