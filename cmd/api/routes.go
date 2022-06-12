@@ -7,7 +7,7 @@ import (
 )
 
 
-func (app *application) routes() *httprouter.Router {
+func (app *application) routes() http.Handler {
 	router := httprouter.New()
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
@@ -18,5 +18,5 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPatch, "/v1/albums/:id", app.updateAlbumHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/albums/:id", app.deleteAlbumHandler)
 
-	return router
+	return app.recoverPanic(app.rateLimit(router))
 }
