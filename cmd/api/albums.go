@@ -71,7 +71,6 @@ func (app *application) showAlbumHandler(w http.ResponseWriter, r *http.Request)
 	
 	err = app.writeJSON(w, http.StatusOK, envelope{"album": album}, nil)
 	if err != nil {
-		app.logger.Println(err)
 		app.serverErrorResponse(w, r, err)
 	}
 }

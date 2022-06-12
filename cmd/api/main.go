@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/davemolk/recordAPI/internal/data"
+	"github.com/davemolk/recordAPI/internal/jsonlog"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -30,7 +31,7 @@ type config struct {
 
 type application struct {
 	config config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models data.Models
 }
 
@@ -61,11 +62,12 @@ func openDB(cfg config) (*sql.DB, error) {
 
 func main() {
 	var cfg config
-	logger := log.New(os.Stdout, "", log.Ldate | log.Ltime)
+
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
 	err := godotenv.Load()
 	if err != nil {
-		logger.Fatal("error loading .env")
+		logger.PrintFatal(err, nil)
 	}
 
 	flag.IntVar(&cfg.port, "port", 8080, "API server port")
@@ -74,15 +76,16 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections") 
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections") 
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
+	
 	flag.Parse()
 
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(err)
+		logger.PrintFatal(err, nil)
 	}
 	defer db.Close()
 
-	logger.Println("database connection established")
+	logger.PrintInfo("database connection established", nil)
 
 	app := &application{
 		config: cfg,
@@ -96,12 +99,16 @@ func main() {
 	srv := &http.Server{
 		Addr: fmt.Sprintf("localhost:%d", cfg.port),
 		Handler: app.routes(),
+		ErrorLog: log.New(logger, "", 0),
 		IdleTimeout: time.Minute,
 		ReadTimeout: 10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
 
-	logger.Printf("starting %s server on %s", cfg.env, srv.Addr)
+	logger.PrintInfo("starting server", map[string]string{
+		"addr": srv.Addr,
+		"env": cfg.env,
+	})
 	err = srv.ListenAndServe()
-	logger.Fatal(err)
+	logger.PrintFatal(err, nil)
 }
