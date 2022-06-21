@@ -103,7 +103,7 @@ func (app *application) readString(qs url.Values, key, defaultValue string) stri
 	return s
 }
 
-func (app *application) readCSV(qs url.Values, key string, defaultValue []string)[]string {
+func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
 	csv := qs.Get(key)
 	if csv == "" {
 		return defaultValue
@@ -129,7 +129,7 @@ func (app *application) background(fn func()) {
 
 	go func() {
 		defer app.wg.Done()
-		
+
 		defer func() {
 			if err := recover(); err != nil {
 				app.logger.PrintError(fmt.Errorf("%s", err), nil)

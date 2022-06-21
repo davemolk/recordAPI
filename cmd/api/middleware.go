@@ -24,12 +24,12 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 
 func (app *application) rateLimit(next http.Handler) http.Handler {
 	type client struct {
-		limiter *rate.Limiter
+		limiter  *rate.Limiter
 		lastSeen time.Time
 	}
 
 	var (
-		mu sync.Mutex
+		mu      sync.Mutex
 		clients = make(map[string]*client)
 	)
 
@@ -70,7 +70,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 
 			mu.Unlock()
 		}
-		next.ServeHTTP(w, r)		
+		next.ServeHTTP(w, r)
 	})
-	
-} 
+
+}

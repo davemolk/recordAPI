@@ -11,8 +11,8 @@ import (
 
 func (app *application) createAlbumHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title string `json:"title"`
-		Artist string `json:"artist"`
+		Title  string   `json:"title"`
+		Artist string   `json:"artist"`
 		Genres []string `json:"genres"`
 	}
 
@@ -24,7 +24,7 @@ func (app *application) createAlbumHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	album := &data.Album{
-		Title: input.Title,
+		Title:  input.Title,
 		Artist: input.Artist,
 		Genres: input.Genres,
 	}
@@ -44,7 +44,7 @@ func (app *application) createAlbumHandler(w http.ResponseWriter, r *http.Reques
 
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/albums/%d", album.ID))
-	
+
 	err = app.writeJSON(w, http.StatusCreated, envelope{"album": album}, headers)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -68,7 +68,7 @@ func (app *application) showAlbumHandler(w http.ResponseWriter, r *http.Request)
 		}
 		return
 	}
-	
+
 	err = app.writeJSON(w, http.StatusOK, envelope{"album": album}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -77,15 +77,15 @@ func (app *application) showAlbumHandler(w http.ResponseWriter, r *http.Request)
 
 func (app *application) listAlbumsHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title string
-		Artist string 
-		Genres []string 
+		Title  string
+		Artist string
+		Genres []string
 		data.Filters
 	}
-	
+
 	v := validator.New()
 	qs := r.URL.Query()
-	
+
 	input.Title = app.readString(qs, "title", "")
 	input.Artist = app.readString(qs, "artist", "")
 	input.Genres = app.readCSV(qs, "genres", []string{})
@@ -127,10 +127,10 @@ func (app *application) updateAlbumHandler(w http.ResponseWriter, r *http.Reques
 		}
 		return
 	}
-	
+
 	var input struct {
-		Title *string `json:"title"`
-		Artist *string `json:"artist"`
+		Title  *string  `json:"title"`
+		Artist *string  `json:"artist"`
 		Genres []string `json:"genres"`
 	}
 
@@ -163,7 +163,7 @@ func (app *application) updateAlbumHandler(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrEditConflict):
-			app.editConflictResponse(w, r,)
+			app.editConflictResponse(w, r)
 		default:
 			app.serverErrorResponse(w, r, err)
 		}

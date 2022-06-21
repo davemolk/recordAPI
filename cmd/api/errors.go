@@ -8,7 +8,7 @@ import (
 func (app *application) logError(r *http.Request, err error) {
 	app.logger.PrintError(err, map[string]string{
 		"request_method": r.Method,
-		"request_url": r.URL.String(),
+		"request_url":    r.URL.String(),
 	})
 }
 
@@ -53,4 +53,9 @@ func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Requ
 func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http.Request) {
 	msg := "rate limit exceeded"
 	app.errorResponse(w, r, http.StatusTooManyRequests, msg)
+}
+
+func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "invalid authentication credentials"
+	app.errorResponse(w, r, http.StatusUnauthorized, msg)
 }

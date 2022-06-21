@@ -14,18 +14,18 @@ import (
 var ErrDuplicateEmail = errors.New("duplicate email")
 
 type User struct {
-	ID int64 `json:"id"`
+	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
-	Name string `json:"name"`
-	Email string `json:"email"`
-	Password password `json:"-"`
-	Activated bool `json:"activated"`
-	Version int `json:"-"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Password  password  `json:"-"`
+	Activated bool      `json:"activated"`
+	Version   int       `json:"-"`
 }
 
 type password struct {
 	plaintext *string
-	hash []byte
+	hash      []byte
 }
 
 func (p *password) Set(plaintextPassword string) error {
@@ -57,7 +57,7 @@ func ValidateEmail(v *validator.Validator, email string) {
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email")
 }
 
-func ValidatePasswordPlaintext(v *validator.Validator,password string) {
+func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 	v.Check(password != "", "password", "must be provided")
 	v.Check(len(password) >= 8, "password", "must be at least 8 bytes long")
 	v.Check(len(password) <= 72, "password", "no longer than 72 bytes")
@@ -68,10 +68,10 @@ func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(len(user.Name) <= 500, "name", "no longer than 500 bytes")
 
 	ValidateEmail(v, user.Email)
-	
+
 	if user.Password.plaintext != nil {
 		ValidatePasswordPlaintext(v, *user.Password.plaintext)
-	} 
+	}
 
 	if user.Password.hash == nil {
 		panic("missing password hash for user")
@@ -89,7 +89,7 @@ func (u UserModel) Insert(user *User) error {
 	RETURNING id, created_at, version`
 
 	args := []interface{}{
-		user.Name, 
+		user.Name,
 		user.Email,
 		user.Password.hash,
 		user.Activated,
@@ -101,10 +101,10 @@ func (u UserModel) Insert(user *User) error {
 	err := u.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
 		switch {
-			case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
-				return ErrDuplicateEmail
-			default:
-				return err
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail
+		default:
+			return err
 		}
 	}
 	return nil
@@ -151,8 +151,8 @@ func (u UserModel) Update(user *User) error {
 		RETURNING version`
 
 	args := []interface{}{
-		user.Name, 
-		user.Email, 
+		user.Name,
+		user.Email,
 		user.Password.hash,
 		user.Activated,
 		user.ID,
@@ -165,12 +165,12 @@ func (u UserModel) Update(user *User) error {
 	err := u.DB.QueryRowContext(ctx, query, args...).Scan(&user.Version)
 	if err != nil {
 		switch {
-			case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
-				return ErrDuplicateEmail
-			case errors.Is(err, sql.ErrNoRows):
-				return ErrEditConflict
-			default:
-				return err
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
 		}
 	}
 
@@ -187,11 +187,11 @@ func (u UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 		WHERE tokens.hash = $1
 		AND tokens.scope = $2
 		AND tokens.expiry > $3`
-	
+
 	args := []interface{}{tokenHash[:], tokenScope, time.Now()}
 
 	var user User
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err := u.DB.QueryRowContext(ctx, query, args...).Scan(

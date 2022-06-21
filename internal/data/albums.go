@@ -12,12 +12,12 @@ import (
 )
 
 type Album struct {
-	ID int64 `json:"id"`
+	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"-"`
-	Title string `json:"title"`
-	Artist string `json:"artist"`
-	Genres []string `json:"genres,omitempty"`
-	Version int32 `json:"version"`
+	Title     string    `json:"title"`
+	Artist    string    `json:"artist"`
+	Genres    []string  `json:"genres,omitempty"`
+	Version   int32     `json:"version"`
 }
 
 type AlbumModel struct {
@@ -29,7 +29,7 @@ func ValidateAlbum(v *validator.Validator, album *Album) {
 	v.Check(album.Artist != "", "artist", "artist required")
 	v.Check(album.Genres != nil, "genre", "genre required")
 	v.Check(validator.Unique(album.Genres), "genres", "no duplicate values")
-	
+
 }
 
 func (a AlbumModel) Insert(album *Album) error {
@@ -40,9 +40,9 @@ func (a AlbumModel) Insert(album *Album) error {
 
 	args := []interface{}{album.Title, album.Artist, pq.Array(album.Genres)}
 
-	ctx, cancel := context.WithTimeout(context.Background(),3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	
+
 	return a.DB.QueryRowContext(ctx, query, args...).Scan(&album.ID, &album.CreatedAt, &album.Version)
 }
 
@@ -55,7 +55,7 @@ func (a AlbumModel) Get(id int64) (*Album, error) {
 		SELECT id, created_at, title, artist, genres, version
 		FROM albums
 		WHERE id = $1`
-	
+
 	var album Album
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -185,9 +185,7 @@ func (a AlbumModel) Delete(id int64) error {
 
 	if rowsAffected == 0 {
 		return ErrRecordNotFound
-	}	
+	}
 
 	return nil
 }
-
-

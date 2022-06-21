@@ -32,14 +32,14 @@ func (l Level) String() string {
 }
 
 type Logger struct {
-	out io.Writer
+	out      io.Writer
 	minLevel Level
-	mu sync.Mutex
+	mu       sync.Mutex
 }
 
 func New(out io.Writer, minLevel Level) *Logger {
 	return &Logger{
-		out: out,
+		out:      out,
 		minLevel: minLevel,
 	}
 }
@@ -62,15 +62,15 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 	}
 
 	aux := struct {
-		Level string `json:"level"`
-		Time string `json:"time"`
-		Message string `json:"message"`
+		Level      string            `json:"level"`
+		Time       string            `json:"time"`
+		Message    string            `json:"message"`
 		Properties map[string]string `json:"properties,omitempty"`
-		Trace string `json:"trace,omitempty"`
+		Trace      string            `json:"trace,omitempty"`
 	}{
-		Level: level.String(),
-		Time: time.Now().UTC().Format(time.RFC3339),
-		Message: message,
+		Level:      level.String(),
+		Time:       time.Now().UTC().Format(time.RFC3339),
+		Message:    message,
 		Properties: properties,
 	}
 
@@ -92,5 +92,3 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 func (l *Logger) Write(message []byte) (n int, err error) {
 	return l.print(LevelError, string(message), nil)
 }
-
-
